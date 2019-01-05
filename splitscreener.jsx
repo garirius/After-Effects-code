@@ -24,6 +24,10 @@
         control.name = "Screen Count";
 				control.property("ADBE Slider Control-0001").setValue(n);
 
+				control = ctrlLayer.Effects.addProperty("ADBE Slider Control");
+        control.name = "Screen Offset";
+				control.property("ADBE Slider Control-0001").setValue(0);
+
         control = ctrlLayer.Effects.addProperty("ADBE Checkbox Control");
         control.name = "Vertical?";
 
@@ -45,7 +49,7 @@
 
 					//Also we move it to the desired position
 					shapeLayer.transform.position.setValue([(i+0.5)*curItem.width/n,curItem.height/2]);
-					shapeLayer.transform.position.expression = "ctrlLayer = thisComp.layer(\"SplitScreen Controls\");\nif(ctrlLayer === undefined){\n  thisProperty\n} else {\n  vert = ctrlLayer.effect(\"Vertical?\").param(1);\n  num = ctrlLayer.effect(\"Screen Count\").param(1);\n\n  n = 0;\n  layerHave = \"- Alpha\";\n  for(i=index+1;i<=thisComp.numLayers;i++){\n    if (thisComp.layer(i).name.includes(layerHave)) n++;\n  }\n\n  (vert == 0)? [(n+0.5)*thisComp.width/num, thisComp.height/2]:[thisComp.width/2, (n+0.5)*thisComp.height/num]\n}\n";
+					shapeLayer.transform.position.expression = "ctrlLayer = thisComp.layer(\"SplitScreen Controls\");\nif(ctrlLayer === undefined){\n  thisProperty\n} else {\n  vert = ctrlLayer.effect(\"Vertical?\").param(1);\n  num = ctrlLayer.effect(\"Screen Count\").param(1);\n\n  offs = ctrlLayer.effect(\"Screen Offset\").param(1);\n\n  n = 0;\n  layerHave = \"- Alpha\";\n  for(i=index+1;i<=thisComp.numLayers;i++){\n    if (thisComp.layer(i).name.includes(layerHave)) n++;\n  }\n\n  (vert == 0)? [(n-offs+0.5)*thisComp.width/num, thisComp.height/2]:[thisComp.width/2, (n-offs+0.5)*thisComp.height/num]\n}\n";
 					shapeLayer.moveBefore(lay);
 					lay.parent = shapeLayer;
 					lay.transform.position.setValue([0,0]);
