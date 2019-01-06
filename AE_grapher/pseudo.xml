@@ -1,46 +1,45 @@
-<Effects>
 <Effect matchname="Pseudo/AE Grapher" name="$$$/AE/Preset/AEGraphControls = AE Grapher Controls">
-  <Point name="$$$/AE/Preset/Size = Graph Size" default_x ="0.66" default_y ="0.66"/>
+  <Point name="$$$/AE/Preset/Size =Graph Size" default_x ="0.66" default_y ="0.66"/>
   <Group name="$$$/AE/Preset/XLimits=X Limits">
-    <Slider name="$$$/AE/Preset/XLowerLimit = X Lower Limit" default="-5" slider_min="-10" slider_max="10" precision="4" valid_min="-5000" valid_max="5000"/>
-    <Slider name="$$$/AE/Preset/XUpperLimit = X Lower Limit" default="5" slider_min="-10" slider_max="10" precision="4" valid_min="-5000" valid_max="5000"/>
+    <Slider name="$$$/AE/Preset/XLowerLimit =X Lower Limit" default="-5" slider_min="-10" slider_max="10" precision="4" valid_min="-5000" valid_max="5000"/>
+    <Slider name="$$$/AE/Preset/XUpperLimit =X Upper Limit" default="5" slider_min="-10" slider_max="10" precision="4" valid_min="-5000" valid_max="5000"/>
   </Group>
   <Group name="$$$/AE/Preset/YLimits=Y Limits">
-    <Slider name="$$$/AE/Preset/YLowerLimit = Y Lower Limit" default="-5" slider_min="-10" slider_max="10" precision="4" valid_min="-5000" valid_max="5000"/>
-    <Slider name="$$$/AE/Preset/YUpperLimit = Y Lower Limit" default="5" slider_min="-10" slider_max="10" precision="4" valid_min="-5000" valid_max="5000"/>
+    <Slider name="$$$/AE/Preset/YLowerLimit =Y Lower Limit" default="-5" slider_min="-10" slider_max="10" precision="4" valid_min="-5000" valid_max="5000"/>
+    <Slider name="$$$/AE/Preset/YUpperLimit =Y Upper Limit" default="5" slider_min="-10" slider_max="10" precision="4" valid_min="-5000" valid_max="5000"/>
   </Group>
   <Group name="$$$/AE/Preset/Overshoots=Overshoots">
-    <Slider name="$$$/AE/Preset/XOvershoot = X Overshoot" default="50" slider_min="0" slider_max="100" precision="0" valid_min="0" valid_max="500"/>
-    <Slider name="$$$/AE/Preset/YOvershoot = Y Overshoot" default="50" slider_min="0" slider_max="100" precision="0" valid_min="0" valid_max="500"/>
+    <Slider name="$$$/AE/Preset/XOvershoot =X Overshoot" default="50" slider_min="0" slider_max="100" precision="0" valid_min="0" valid_max="500"/>
+    <Slider name="$$$/AE/Preset/YOvershoot =Y Overshoot" default="50" slider_min="0" slider_max="100" precision="0" valid_min="0" valid_max="500"/>
   </Group>
 
   <Group name="$$$/AE/Preset/TicksnGrid=Ticks and Grid">
     <Group name="$$$/AE/Preset/Primary=Primary">
-      <Slider name="$$$/AE/Preset/UnitsPerTickX = Units per Tick X" default="1" slider_min="0.0001" slider_max="10" valid_min="0.0001" valid_max="5000" precision="4"/>
-      <Slider name="$$$/AE/Preset/UnitsPerTickY = Units per Tick Y" default="1" slider_min="0.0001" slider_max="10" valid_min="0.0001" valid_max="5000" precision="4"/>
-      <Slider name="$$$/AE/Preset/TickLength = Tick Length" default="20" slider_min="-100" slider_max="100" precision="0" valid_min="-500" valid_max="500"/>
+      <Slider name="$$$/AE/Preset/UnitsPerTickX =Units per Tick X" default="1" slider_min="0.0001" slider_max="10" valid_min="0.0001" valid_max="5000" precision="4"/>
+      <Slider name="$$$/AE/Preset/UnitsPerTickY =Units per Tick Y" default="1" slider_min="0.0001" slider_max="10" valid_min="0.0001" valid_max="5000" precision="4"/>
+      <Slider name="$$$/AE/Preset/TickLength =Tick Length" default="20" slider_min="-100" slider_max="100" precision="0" valid_min="-500" valid_max="500"/>
     </Group>
 
     <Group name="$$$/AE/Preset/Secondary=Secondary">
-      <Slider name="$$$/AE/Preset/TickDensityX = Ticks per Segment X" default="5" slider_min="0" slider_max="10" valid_min="0" valid_max="100" precision="0"/>
-      <Slider name="$$$/AE/Preset/TickDensityY = Ticks per Segment Y" default="5" slider_min="0" slider_max="10" valid_min="0" valid_max="100" precision="0"/>
-      <Slider name="$$$/AE/Preset/TickLength2 = Tick Length" default="10" slider_min="-50" slider_max="50" precision="0" valid_min="-500" valid_max="500"/>
+      <Slider name="$$$/AE/Preset/TickDensityX =Ticks per Segment X" default="5" slider_min="0" slider_max="10" valid_min="0" valid_max="100" precision="0"/>
+      <Slider name="$$$/AE/Preset/TickDensityY =Ticks per Segment Y" default="5" slider_min="0" slider_max="10" valid_min="0" valid_max="100" precision="0"/>
+      <Slider name="$$$/AE/Preset/TickLength2 =Tick Length" default="10" slider_min="-50" slider_max="50" precision="0" valid_min="-500" valid_max="500"/>
     </Group>
   </Group>
 
-  <Group name="$$$/AE/Preset/FuncParam=Function Parameters">
-    <Slider name="$$$/AE/Preset/ParamA = Parameter A" default="5" slider_min="-10" slider_max="10" valid_min="-100" valid_max="100" precision="4"/>
-    <Slider name="$$$/AE/Preset/ParamB = Parameter B" default="0" slider_min="-10" slider_max="10" valid_min="-100" valid_max="100" precision="4"/>
-    <Slider name="$$$/AE/Preset/ParamC = Parameter C" default="2" slider_min="-10" slider_max="10" valid_min="-100" valid_max="100" precision="4"/>
-    <Slider name="$$$/AE/Preset/ParamD = Parameter D" default="3" slider_min="-10" slider_max="10" valid_min="-100" valid_max="100" precision="4"/>
-    <Slider name="$$$/AE/Preset/ParamE = Parameter E" default="-5" slider_min="-10" slider_max="10" valid_min="-100" valid_max="100" precision="4"/>
+  <Group name="$$$/AE/Preset/Inner =Inner Workings">
+    <Point name="$$$/AE/Preset/ppu =Pixels per Unit"/>
+    <Point name="$$$/AE/Preset/zPoint =zPoint"/>
+    <Point name="$$$/AE/Preset/XLims =X Limits"/>
+    <Point name="$$$/AE/Preset/XLims =Y Limits"/>
   </Group>
 
-  <Group name="$$$/AE/Preset/InnerWorkings=Inner Workings (do NOT touch!)">
-    <Point name="$$$/AE/Preset/zPoint = Coordinate origin"/>
-    <Point name="$$$/AE/Preset/ppu = Pixels per Unit"/>
-    <Point name="$$$/AE/Preset/xlim = X Limits"/>
-    <Point name="$$$/AE/Preset/ylim = Y Limits"/>
-  </Group>
 </Effect>
-</Effects>
+
+<Effect name="$$$/AE/Preset/FuncParam=Function Parameters">
+  <Slider name="$$$/AE/Preset/ParamA = Parameter A" default="5" slider_min="-10" slider_max="10" valid_min="-100" valid_max="100" precision="4"/>
+  <Slider name="$$$/AE/Preset/ParamB = Parameter B" default="0" slider_min="-10" slider_max="10" valid_min="-100" valid_max="100" precision="4"/>
+  <Slider name="$$$/AE/Preset/ParamC = Parameter C" default="2" slider_min="-10" slider_max="10" valid_min="-100" valid_max="100" precision="4"/>
+  <Slider name="$$$/AE/Preset/ParamD = Parameter D" default="3" slider_min="-10" slider_max="10" valid_min="-100" valid_max="100" precision="4"/>
+  <Slider name="$$$/AE/Preset/ParamE = Parameter E" default="-5" slider_min="-10" slider_max="10" valid_min="-100" valid_max="100" precision="4"/>
+</Effect>

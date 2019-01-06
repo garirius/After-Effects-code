@@ -1,8 +1,8 @@
 {
+  var PRESETS_FOLDER = null, GRAPH_AMOUNT = 0;
   function myScript(thisObj){
     function buildUI(thisObj){
       var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "AE Grapher", undefined, {resizeable: true, closeButton: true});
-
       //function to see if we're inside a comp
       function isThisComp(){
         var curItem = app.project.activeItem;
@@ -24,25 +24,132 @@
         return graphBuff;
       }
 
+      //plot counting stuff
+      function countPlots(where){
+        var cont = where.property("Contents")("Plots");
+        if(cont !== null && cont !== undefined){
+          var nam = cont(1).name;
+          nam = nam.split(" ");
+          return nam[nam.length-1];
+        } else {
+          return 0;
+        }
+      }
+
+      //function to add a plot
+      function addPlot(where){
+        //add preset
+        if(where !== null){
+          var preset = new File("AE Grapher - Function Parameters.ffx");
+          if(preset.exists != true){
+            preset = findPreset("AE Grapher - Function Parameters");
+          }
+
+          where.applyPreset(preset);
+
+          var compItem = where.containingComp;
+          var ctrlLay = compItem.layers.addText("return a*Math.exp(-Math.pow(x-b,2)/(2*Math.pow(c,2)));")
+          ctrlLay.name = where.name + " - Function " + parseInt(countPlots(where)+1);
+        } else {
+          alert("Please select an AE Graph layer to create the plot in.");
+        }
+      }
+
+      //function to find AE Grapher Presets
+      function findPreset(name, where){
+
+        if(typeof where === 'undefined'){
+          var possibleFolders = [Folder.appPackage.absoluteURI + "/Presets",
+            Folder.appPackage.absoluteURI + "/Presets/AE Grapher",
+            PRESETS_FOLDER];
+          var n = 0, preset;
+
+          while(n < possibleFolders.length){ //explore default possible folders
+            var fol = possibleFolders[n];
+            preset = findPreset(name,fol);
+            if(preset !== null){
+              return preset;
+            }
+            n++;
+          }
+
+          //if it couldn't be found, ask for the path
+          alert("Couldn't find AE Grapher Preset folder! Please select folder.\nIn the future, we recommend you add AE Grapher Preset folder to the Presets Folder.");
+
+          myPresetsFolder = Folder(Folder.myDocuments.absoluteURI).selectDlg();
+
+          // Beware, at this stage the variable myPresetsFolder can still be null, if the user was prompted a folder dialog and closed it.
+          if(myPresetsFolder === null){
+            return null;
+          } else {
+            preset = findPreset(name,myPresetsFolder.absoluteURI);
+            if(preset!==null){
+              PRESETS_FOLDER = myPresetsFolder.absoluteURI;
+              return preset;
+            } else {
+              return null;
+            }
+          }
+        } else {
+          name = name + ".ffx";
+          var presetsFolder = Folder(where);
+          var presets = presetsFolder.getFiles(name);
+
+          return (presets.length > 0) ? presets[0]:null;
+        }
+
+      }
+
       //Build UI itself
       var defSize = [22,22];
       myPanel.grp = myPanel.add("group {orientation: 'column'}");
       var panGroup = myPanel.grp;
 
-      //Add graph button
+      /* ------------ ADD GRAPH BUTTON ----------------- */
       var addGraphButton = panGroup.add("button", undefined, 'Add Graph')
       addGraphButton.onClick = function(){
-        myPanel.close();
+        app.beginUndoGroup("Add Graph");
+        if(isThisComp()){ //check if there's a comp to work in
+          var curItem = app.project.activeItem;
+          var lay = curItem.layers.addShape();
+          lay.name = "AE Graph " + parseInt(GRAPH_AMOUNT + 1);
+          GRAPH_AMOUNT++;
+
+          //Add graph controls
+          var preset = new File("AE Grapher.ffx");
+          if(preset.exists != true){
+            preset = findPreset("AE Grapher");
+          }
+          lay.applyPreset(preset);
+
+          //Add plot
+          addPlot(lay);
+        } else {
+          alert("Please select a composition to create the graph in.");
+        }
+        app.endUndoGroup();
+      }
+
+      /* ------------ DELETE GRAPH BUTTON ----------------- */
+      var deleteGraphButton = panGroup.add("button", undefined, 'Delete Graph')
+      deleteGraphButton.onClick = function(){
+        app.beginUndoGroup("Delete Graph");
+        if(isThisComp()){ //check if there's a comp to work in
+          var com = app.project.activeItem;
+          if(com.selectedLayers.length > 0){ //if there are selected layers, check thos
+            e;
+          } else { //otherwise, look for the latest graph
+
+          }
+        } else {
+          alert("Please select a composition to create the graph in.");
+        }
+        app.endUndoGroup();
       }
 
       //Graph elements
       var graphElements = panGroup.add("panel", undefined, 'Graph Elements');
       graphElements.alignChildren = 'left';
-      var xLabelToggle = false, yLabelToggle = false;
-      var xTickToggle = true, yTickToggle = true;
-      var xGridToggle = true, yGridToggle = true;
-      var secXTickToggle =  false, secYTickToggle =  false;
-      var secXGridToggle =  false, secYGridToggle =  false;
 
       //Adding plot curves
       var plotGroup = graphElements.add("group");

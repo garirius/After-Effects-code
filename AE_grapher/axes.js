@@ -1,15 +1,15 @@
 //VERTICAL
-overshoot = effect("Slider Control 3")("Slider");
-size = [effect("Slider Control 5")("Slider"),effect("Slider Control 6")("Slider")];
+overshoot = effect(" AE Grapher Controls")("Y Overshoot");
+size = effect(" AE Grapher Controls")("Graph Size");
 
-xpos = effect("Point Control")("Point")[0];
+xpos = effect(" AE Grapher Controls")("zPoint")[0];
 
 thisProperty.createPath([[xpos,-size[1]/2 - overshoot],[xpos,size[1]/2 + overshoot]]);
 
 //HORIZONTAL
-overshoot = effect("Slider Control 4")("Slider");
-size = [effect("Slider Control 5")("Slider"),effect("Slider Control 6")("Slider")];
+overshoot = effect(" AE Grapher Controls")("X Overshoot");
+size = effect(" AE Grapher Controls")("Graph Size");
 
-ypos = effect("Point Control")("Point")[1]
+ypos = effect(" AE Grapher Controls")("zPoint")[1];
 
 thisProperty.createPath([[-size[0]/2 - overshoot,ypos],[size[0]/2 + overshoot,ypos]]);
