@@ -1,8 +1,9 @@
 {
-  var PRESETS_FOLDER = null, GRAPH_AMOUNT = 0;
   function myScript(thisObj){
     function buildUI(thisObj){
       var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "AE Grapher", undefined, {resizeable: true, closeButton: true});
+
+      var GRAPH_ID_STRING = "AEGRAPH", PLOT_ID_STRING="AEPLOT";
       //function to see if we're inside a comp
       function isThisComp(){
         var curItem = app.project.activeItem;
@@ -36,6 +37,32 @@
         }
       }
 
+      function countGraphs(){
+        var comp = app.project.activeItem;
+        if(comp.numLayers > 0){
+          var lays = comp.layers;
+          var id=undefined, num = 0;
+
+          for(n=1; n<=comp.numLayers; n++){
+            var lay = lays[n];
+            //skip layer if it isn't a Shape Layer, it's impossible for it to be a graph
+            if(!(lay instanceof ShapeLayer)) continue;
+
+            //if a shape layer has a comment and includes a graph id string we should check it out
+            if(lay.comment.indexOf(GRAPH_ID_STRING) >= 0){
+              //get the graph number and, if it's bigger than any number we've found, we jot it down
+              id = lay.comment.split("-");
+              id = parseInt(id[id.length-1]);
+
+              num = (id > num) ? id:num;
+            }
+          }
+          return num;
+        } else {
+          return 0;
+        }
+      }
+
       //function to add a plot
       function addPlot(where){
         //add preset
@@ -47,12 +74,19 @@
 
           where.applyPreset(preset);
 
+          var numPlots = countPlots(where);
           var compItem = where.containingComp;
           var ctrlLay = compItem.layers.addText("return a*Math.exp(-Math.pow(x-b,2)/(2*Math.pow(c,2)));")
-          ctrlLay.name = where.name + " - Function " + parseInt(countPlots(where)+1);
+          ctrlLay.name = where.name + " - Function " + parseInt(numPlots+1);
+          ctrlLay.comment = where.comment + " " + PLOT_ID_STRING + parseInt(numPlots+1);
         } else {
           alert("Please select an AE Graph layer to create the plot in.");
         }
+      }
+
+      //function to check if a layer is an AE Graph layer
+      function isAEGraph(which){
+        return (which instanceof ShapeLayer) && which.comment.indexOf(GRAPH_ID_STRING) >= 0;
       }
 
       //function to find AE Grapher Presets
@@ -100,6 +134,24 @@
 
       }
 
+      //function to delete any layers related to a given layer
+      function deleteGraph(which){
+        var id = which.comment;
+        var comp = which.containingComp;
+        which.remove();
+
+        var n=1, lays = comp.layers;
+        while(n<=lays.length){
+          lay = lays[n];
+          if(lay.comment.indexOf(id) >= 0){
+            lay.remove();
+            lays = comp.layers;
+            n = 1;
+          } else {
+            n++;
+          }
+        }
+      }
       //Build UI itself
       var defSize = [22,22];
       myPanel.grp = myPanel.add("group {orientation: 'column'}");
@@ -110,10 +162,10 @@
       addGraphButton.onClick = function(){
         app.beginUndoGroup("Add Graph");
         if(isThisComp()){ //check if there's a comp to work in
+          var num = countGraphs()+1;
           var curItem = app.project.activeItem;
           var lay = curItem.layers.addShape();
-          lay.name = "AE Graph " + parseInt(GRAPH_AMOUNT + 1);
-          GRAPH_AMOUNT++;
+          lay.name = "AE Graph " + num;
 
           //Add graph controls
           var preset = new File("AE Grapher.ffx");
@@ -121,6 +173,9 @@
             preset = findPreset("AE Grapher");
           }
           lay.applyPreset(preset);
+
+          //Add identifier
+          lay.comment = GRAPH_ID_STRING + "-" + num;
 
           //Add plot
           addPlot(lay);
@@ -136,13 +191,24 @@
         app.beginUndoGroup("Delete Graph");
         if(isThisComp()){ //check if there's a comp to work in
           var com = app.project.activeItem;
-          if(com.selectedLayers.length > 0){ //if there are selected layers, check thos
-            e;
+          if(com.selectedLayers.length > 0){ //if there are selected layers, check those
+            n = 0;
+            while(n<com.selectedLayers.length){
+              var lay = com.selectedLayers[n];
+              if(isAEGraph(lay)) deleteGraph(lay) else n++;
+            }
           } else { //otherwise, look for the latest graph
-
+            var id = GRAPH_ID_STRING + "-" + parseInt(countGraphs());
+            for(n=1; n<=com.numLayers; n++){
+              var lay = com.layers[n];
+              if(isAEGraph(lay) && lay.comment == id){
+                deleteGraph(lay);
+                break;
+              }
+            }
           }
         } else {
-          alert("Please select a composition to create the graph in.");
+          alert("Please select a composition to delete the graph from.");
         }
         app.endUndoGroup();
       }
@@ -156,7 +222,18 @@
       var addPlotButton = plotGroup.add("button", undefined, '+');
       addPlotButton.size = defSize;
       addPlotButton.onClick = function(){
-        myPanel.close();
+        app.beginUndoGroup("Add Plots");
+        if(isThisComp()){ //check if there's a comp to work in
+          var com = app.project.activeItem;
+          if(com.selectedLayers.length > 0){ //if there are selected layers, check thos
+
+          } else { //otherwise, throw an error
+            alert("Please select an AE Graph Layer to add the plot to.")
+          }
+        } else {
+          alert("Please select a composition to create the graph in.");
+        }
+        app.endUndoGroup();
       }
       var deletePlotButton = plotGroup.add("button", undefined, '-');
       deletePlotButton.size = defSize;
