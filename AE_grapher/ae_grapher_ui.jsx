@@ -28,13 +28,15 @@
       //plot counting stuff
       function countPlots(where){
         var cont = where.property("Contents")("Plots");
+        var res = 0, prop;
         if(cont !== null && cont !== undefined){
-          var nam = cont(1).name;
-          nam = nam.split(" ");
-          return nam[nam.length-1];
-        } else {
-          return 0;
+          for(n=1; n<=cont.numProperties; n++){
+            prop = cont.property(n);
+            if(prop.name.indexOf(PLOT_ID_STRING) >= 0) res++;
+          }
         }
+
+        return res;
       }
 
       function countGraphs(){
@@ -177,6 +179,10 @@
           //Add identifier
           lay.comment = GRAPH_ID_STRING + "-" + num;
 
+          //Add plot panGrou
+          var plotGroup = lay.property("Contents").addProperty("ADBE Vector Group");
+          plotGroup.name = "Plots";
+
           //Add plot
           addPlot(lay);
         } else {
@@ -225,8 +231,20 @@
         app.beginUndoGroup("Add Plots");
         if(isThisComp()){ //check if there's a comp to work in
           var com = app.project.activeItem;
+          var graphBuff = [];
           if(com.selectedLayers.length > 0){ //if there are selected layers, check thos
-
+            for(n=0; n<com.selectedLayers.length; n++){
+              var lay = com.selectedLayers[n];
+              if(isAEGraph(lay)) graphBuff.push(lay);
+            }
+            if(graphBuff.length > 0) {
+              for(n=0; n<graphBuff.length; n++){
+                alert(graphBuff[n].name);
+                addPlot(graphBuff[n]);
+              }
+            } else {
+              alert("Please select an AE Graph Layer to add the plot to.");
+            }
           } else { //otherwise, throw an error
             alert("Please select an AE Graph Layer to add the plot to.")
           }
