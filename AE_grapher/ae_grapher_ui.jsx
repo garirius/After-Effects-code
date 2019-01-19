@@ -3,7 +3,9 @@
     function buildUI(thisObj){
       var myPanel = (thisObj instanceof Panel) ? thisObj : new Window("palette", "AE Grapher", undefined, {resizeable: true, closeButton: true});
 
-      var GRAPH_ID_STRING = "AEGRAPH", PLOT_ID_STRING="AEPLOT";
+      var GRAPH_ID_STRING = "AEGRAPH", PLOT_ID_STRING="AEPLOT", SECTION_NAME = "AEGrapherSettings", PRESETS_FOLDER="PresetsFolder";
+      var COLORS = [[1,0,0,1], [0.5,0.5,0,1], [0,1,0,1], [0,0.5,0.5,1], [0,0,1,1], [0.5,0,0.5,1]];
+
       //function to see if we're inside a comp
       function isThisComp(){
         var curItem = app.project.activeItem;
@@ -68,19 +70,40 @@
       //function to add a plot
       function addPlot(where){
         //add preset
-        if(where !== null){
+        if(where !== null && where !== undefined){
+          var numPlots = countPlots(where);
           var preset = new File("AE Grapher - Function Parameters.ffx");
-          if(preset.exists != true){
+          if(!preset.exists){
             preset = findPreset("AE Grapher - Function Parameters");
           }
 
           where.applyPreset(preset);
+          //sometimes the Function Parameters.ffx preset gets applied twice (dunno why)
+          //so we're removing it by hand bc i don't know how to fix it
+          var effs = where.effect;
+          for(n=0; n<effs.numProperties; n++){
+            eff = effs.property(n+1);
+            //if the effect name is not "Function Parameters we're gonna skip it"
+            if(eff.name.indexOf("Function Parameters") < 0) continue;
 
-          var numPlots = countPlots(where);
+            num = eff.name.split(" ");
+            num = parseInt(num[num.length-1]);
+            if(num > numPlots+1) eff.remove();
+          }
+
+          //Create Text control layer
           var compItem = where.containingComp;
           var ctrlLay = compItem.layers.addText("return a*Math.exp(-Math.pow(x-b,2)/(2*Math.pow(c,2)));")
-          ctrlLay.name = where.name + " - Function " + parseInt(numPlots+1);
-          ctrlLay.comment = where.comment + " " + PLOT_ID_STRING + parseInt(numPlots+1);
+          ctrlLay.name = where.name + " - Function " + (numPlots+1).toString();
+          ctrlLay.comment = where.comment + " " + PLOT_ID_STRING +"-"+ (numPlots+1).toString();
+
+          //add the actual plot
+          var plot = where("Contents")("Plots").addProperty("ADBE Vectors Group");
+          var plot2 = plot.addProperty("ADBE Vector Shape - Group");
+          plot2.name = PLOT_ID_STRING +"-"+ (numPlots+1).toString();
+          var stroke = plot.addProperty("ADBE Vector Graphic - Stroke");
+          stroke("Color").setValue(COLORS[numPlots%(COLORS.length)]);
+          stroke("Stroke Width").setValue(10);
         } else {
           alert("Please select an AE Graph layer to create the plot in.");
         }
@@ -93,40 +116,47 @@
 
       //function to find AE Grapher Presets
       function findPreset(name, where){
-
+        var preset;
         if(typeof where === 'undefined'){
-          var possibleFolders = [Folder.appPackage.absoluteURI + "/Presets",
-            Folder.appPackage.absoluteURI + "/Presets/AE Grapher",
-            PRESETS_FOLDER];
-          var n = 0, preset;
 
-          while(n < possibleFolders.length){ //explore default possible folders
-            var fol = possibleFolders[n];
-            preset = findPreset(name,fol);
+          //if there's already a saved setting for the location of the presets, use that
+          if(app.settings.haveSetting(SECTION_NAME,PRESETS_FOLDER)){
+            preset = findPreset(name, app.settings.getSetting(SECTION_NAME, PRESETS_FOLDER));
+            if(preset !== null) return preset;
+          }
+
+          //otherwise, go through a couple of basic alternatives
+          var possibleFolders = [Folder.appPackage.absoluteURI + "/Presets", Folder.appPackage.absoluteURI + "/Presets/AE Grapher"];
+
+          for(var n=0; n<possibleFolders.length; n++){ //explore default possible folders
+            preset = findPreset(name,possibleFolders[n]);
             if(preset !== null){
+              //if we found the preset, save its location and return the preset
+              app.settings.saveSetting(SECTION_NAME,PRESETS_FOLDER,possibleFolders[n].absoluteURI);
+              app.preferences.saveToDisk();
               return preset;
             }
-            n++;
           }
 
           //if it couldn't be found, ask for the path
           alert("Couldn't find AE Grapher Preset folder! Please select folder.\nIn the future, we recommend you add AE Grapher Preset folder to the Presets Folder.");
 
           myPresetsFolder = Folder(Folder.myDocuments.absoluteURI).selectDlg();
-
-          // Beware, at this stage the variable myPresetsFolder can still be null, if the user was prompted a folder dialog and closed it.
           if(myPresetsFolder === null){
             return null;
           } else {
             preset = findPreset(name,myPresetsFolder.absoluteURI);
             if(preset!==null){
-              PRESETS_FOLDER = myPresetsFolder.absoluteURI;
+              app.settings.saveSetting(SECTION_NAME,PRESETS_FOLDER,myPresetsFolder.absoluteURI);
+              app.preferences.saveToDisk();
               return preset;
             } else {
               return null;
             }
           }
         } else {
+          //if we're instructed to look for the preset specifically somewhere,
+          //we check if it's there and if it's not let's just return null
           name = name + ".ffx";
           var presetsFolder = Folder(where);
           var presets = presetsFolder.getFiles(name);
@@ -171,7 +201,7 @@
 
           //Add graph controls
           var preset = new File("AE Grapher.ffx");
-          if(preset.exists != true){
+          if(!preset.exists){
             preset = findPreset("AE Grapher");
           }
           lay.applyPreset(preset);
@@ -185,6 +215,7 @@
 
           //Add plot
           addPlot(lay);
+
         } else {
           alert("Please select a composition to create the graph in.");
         }
@@ -232,8 +263,8 @@
         if(isThisComp()){ //check if there's a comp to work in
           var com = app.project.activeItem;
           var graphBuff = [];
-          if(com.selectedLayers.length > 0){ //if there are selected layers, check thos
-            for(n=0; n<com.selectedLayers.length; n++){
+          if(com.selectedLayers.length > 0){ //if there are selected layers, check those
+            for(n=0; n<com.selectedLayers.length; n++){ //keep only the ones that are AE Graphs
               var lay = com.selectedLayers[n];
               if(isAEGraph(lay)) graphBuff.push(lay);
             }
@@ -242,7 +273,7 @@
                 alert(graphBuff[n].name);
                 addPlot(graphBuff[n]);
               }
-            } else {
+            } else { //if there are no AE Graphs, throw an error
               alert("Please select an AE Graph Layer to add the plot to.");
             }
           } else { //otherwise, throw an error
