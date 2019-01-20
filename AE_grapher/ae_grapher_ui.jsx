@@ -6,71 +6,122 @@
       var GRAPH_ID_STRING = "AEGRAPH", PLOT_ID_STRING="AEPLOT", SECTION_NAME = "AEGrapherSettings", PRESETS_FOLDER="PresetsFolder";
       var COLORS = [[1,0,0,1], [0.5,0.5,0,1], [0,1,0,1], [0,0.5,0.5,1], [0,0,1,1], [0.5,0,0.5,1]];
 
-      //function to see if we're inside a comp
+      /**
+       * Gets all layers that match a certain criterium
+       *
+       * @param {String} str The string we have to look for.
+       * @param {(CompItem|Layer[]|LayerCollection)} [where=app.project.activeItem.layers] Layer Collection or Array in which to look for the layers. It checks the whole active comp by default.
+       * @example
+       * //returns all layers whose comment includes "LAYER"
+       * getLayersWithComment("LAYER");
+       * @example
+       * //returns all selected layers whose comment includes "HI"
+       * getLayersWith("HI",app.project.activeItem.selectedLayers);
+       * @returns {Layer[]} Returns all layers that match the criteria.
+       */
+      function getLayersWithComment(str, where){
+        if(typeof str === 'string'){
+          var layBuff = [], lays, startNum=1, post=1;
+          //if no collection is specified, get active comp by default
+          if(where === undefined && isThisComp()) where = app.project.activeItem;
+
+          //if we're dealing with a comp we're gonna look at all its layers
+          if (where instanceof CompItem) {
+            lays = where.layers;
+          } else if(where instanceof LayerCollection){
+            //if it's a layer collection then we just have to go through where
+            lays = where;
+          } else if(where instanceof Array && where.every(function(el){return el instanceof Layer;})){
+            //if it's a Layer array we have to change the numbering
+            lays = where;
+            startNum = 0;
+            post = 0;
+          } else return null;
+
+          var cond;
+          for(var n=startNum; n<lays.length+post; n++){
+            if(lays[n].comment.indexOf(str) >= 0) layBuff.push(lays[n]);
+          }
+          return layBuff;
+        } else return null;
+      }
+
+      /**
+       * Checks if a certain layer is an AE Graph
+       * @param {Layer} what Layer to check.
+       * @returns {Boolean} Whether the layer is an AE Graph.
+       */
+       function isAEGraph(what){
+         return (what instanceof ShapeLayer) && (what.comment.indexOf(GRAPH_ID_STRING) >= 0);
+       }
+      /**
+       * Checks if we're inside a composition.
+       * @returns {Boolean} True if activeItem is a comp. False if not.
+       */
       function isThisComp(){
         var curItem = app.project.activeItem;
-        // check if comp is selected
         return !(curItem == null || !(curItem instanceof CompItem));
       }
 
-      //function that returns any graphs that are selected
+      /**
+       * Gets all selected AE Graph Layers
+       * @returns {Layer[]} Returns all selected AE Graph Layers.
+       */
       function selectedGraphs(){
-        var curItem = app.project.activeItem;
-        var graphBuff = [], lay;
-
-        for(n=0; n<curItem.selectedLayers.length; n++){
-          //check every layer individually to see if it is a graph
-          lay = curItem.selectedLayers[n];
-          if(lay.name.indexOf("| AE Graph") > -1) graphBuff.push(lay);
-        }
-
-        return graphBuff;
+        return app.project.activeItem.selectedLayers.filter(function(lay) {return isAEGraph(lay);});
       }
 
-      //plot counting stuff
+      /**
+       * Counts how many plots a certain AE Graph has.
+       * @param {Layer} where AE Graph in which to count.
+       * @returns {Number|Null} Amount of plots an AE Graph has. null if it's not an AE Graph.
+       */
       function countPlots(where){
-        var cont = where.property("Contents")("Plots");
-        var res = 0, prop;
-        if(cont !== null && cont !== undefined){
-          for(n=1; n<=cont.numProperties; n++){
-            prop = cont.property(n);
-            if(prop.name.indexOf(PLOT_ID_STRING) >= 0) res++;
+        if(isAEGraph(where)){
+          var cont = where.property("Contents")("Plots")("Contents");
+          var res = 0, prop;
+          if(cont !== null && cont !== undefined){
+            for(var n=1; n<=cont.numProperties; n++){
+              prop = cont.property(n);
+              alert(prop.name);
+              if(prop.name.indexOf(PLOT_ID_STRING) >= 0) res++;
+            }
           }
-        }
-
-        return res;
+          alert(res);
+          return res;
+        } else return null;
       }
 
+      /**
+       * Counts how many AE Graphs a certain composition has.
+       * @returns {Number|Null} Amount of AE Graphs a composition has. Null if not an active comp.
+       */
       function countGraphs(){
-        var comp = app.project.activeItem;
-        if(comp.numLayers > 0){
-          var lays = comp.layers;
-          var id=undefined, num = 0;
+        if(isThisComp()){
+          if(app.project.activeItem.numLayers > 0){
+            //get all AE Graphs
+            var lays = getLayersWithComment(GRAPH_ID_STRING).filter(function(lay) {return isAEGraph(lay);});
+            var id=undefined, num = 0;
 
-          for(n=1; n<=comp.numLayers; n++){
-            var lay = lays[n];
-            //skip layer if it isn't a Shape Layer, it's impossible for it to be a graph
-            if(!(lay instanceof ShapeLayer)) continue;
-
-            //if a shape layer has a comment and includes a graph id string we should check it out
-            if(lay.comment.indexOf(GRAPH_ID_STRING) >= 0){
+            for(var n=0; n<lays.length; n++){
               //get the graph number and, if it's bigger than any number we've found, we jot it down
-              id = lay.comment.split("-");
+              id = lays[n].comment.split("-");
               id = parseInt(id[id.length-1]);
 
               num = (id > num) ? id:num;
             }
-          }
-          return num;
-        } else {
-          return 0;
-        }
+            return num;
+          } else return 0;
+        } else return null;
       }
 
-      //function to add a plot
+      /**
+       * Adds a plot to an AE Graph
+       * @param {Layer} where AE Graph in which to add the plot.
+       */
       function addPlot(where){
         //add preset
-        if(where !== null && where !== undefined){
+        if(where !== null && where !== undefined && isAEGraph(where)){
           var numPlots = countPlots(where);
           var preset = new File("AE Grapher - Function Parameters.ffx");
           if(!preset.exists){
@@ -81,7 +132,7 @@
           //sometimes the Function Parameters.ffx preset gets applied twice (dunno why)
           //so we're removing it by hand bc i don't know how to fix it
           var effs = where.effect;
-          for(n=0; n<effs.numProperties; n++){
+          for(var n=0; n<effs.numProperties; n++){
             eff = effs.property(n+1);
             //if the effect name is not "Function Parameters we're gonna skip it"
             if(eff.name.indexOf("Function Parameters") < 0) continue;
@@ -97,6 +148,20 @@
           ctrlLay.name = where.name + " - Function " + (numPlots+1).toString();
           ctrlLay.comment = where.comment + " " + PLOT_ID_STRING +"-"+ (numPlots+1).toString();
 
+          //move the new text control layer next to any others there might be
+          var prevLay = null;
+          if(numPlots < 1){
+            //get all plot control text layers related to this graph
+            var id = where.comment + " " + PLOT_ID_STRING + "-" + numPlots.toString();
+            prevLay = getLayersWithComment(id).filter(function(lay){
+              return (lay instanceof TextLayer);
+            });
+            prevLay = (prevLay instanceof Array) ? prevLay[0]:prevLay;
+          } else {
+            prevLay = where;
+          }
+          ctrlLay.moveBefore(prevLay);
+
           //add the actual plot
           var plot = where("Contents")("Plots").addProperty("ADBE Vectors Group");
           var plot2 = plot.addProperty("ADBE Vector Shape - Group");
@@ -109,16 +174,15 @@
         }
       }
 
-      //function to check if a layer is an AE Graph layer
-      function isAEGraph(which){
-        return (which instanceof ShapeLayer) && which.comment.indexOf(GRAPH_ID_STRING) >= 0;
-      }
-
-      //function to find AE Grapher Presets
+      /**
+       * Looks for a given preset
+       * @param {String} name Name of the preset.
+       * @param {String} [where] URI of the folder in which to look. Not needed if there's already a setting for it or if you want to ask.
+       * @returns {File|Null} The preset file if it could be found, null if not.
+       */
       function findPreset(name, where){
         var preset;
         if(typeof where === 'undefined'){
-
           //if there's already a saved setting for the location of the presets, use that
           if(app.settings.haveSetting(SECTION_NAME,PRESETS_FOLDER)){
             preset = findPreset(name, app.settings.getSetting(SECTION_NAME, PRESETS_FOLDER));
@@ -166,23 +230,20 @@
 
       }
 
-      //function to delete any layers related to a given layer
+      /**
+       * Delete any layer related to a certain graph
+       * @param {Number|Layer} which If it's a number, delete all layers related to the n-th graph. If it's a layer, delete all layers of the same graph.
+       */
       function deleteGraph(which){
-        var id = which.comment;
-        var comp = which.containingComp;
-        which.remove();
+        var id, lays;
+        if(typeof which == 'number' && which > 0 && isThisComp()){
+          id = GRAPH_ID_STRING + "-" + which.toString();
+        } else if (which instanceof Layer){
+          id = which.comment.split(" ")[0];
+        } else return;
 
-        var n=1, lays = comp.layers;
-        while(n<=lays.length){
-          lay = lays[n];
-          if(lay.comment.indexOf(id) >= 0){
-            lay.remove();
-            lays = comp.layers;
-            n = 1;
-          } else {
-            n++;
-          }
-        }
+        var lays = getLayersWithComment(id);
+        while(lays.length>0){lays[0].remove(); alert(lays.length);}
       }
       //Build UI itself
       var defSize = [22,22];
@@ -204,6 +265,7 @@
           if(!preset.exists){
             preset = findPreset("AE Grapher");
           }
+
           lay.applyPreset(preset);
 
           //Add identifier
@@ -236,7 +298,7 @@
             }
           } else { //otherwise, look for the latest graph
             var id = GRAPH_ID_STRING + "-" + parseInt(countGraphs());
-            for(n=1; n<=com.numLayers; n++){
+            for(var n=1; n<=com.numLayers; n++){
               var lay = com.layers[n];
               if(isAEGraph(lay) && lay.comment == id){
                 deleteGraph(lay);
@@ -250,11 +312,13 @@
         app.endUndoGroup();
       }
 
-      //Graph elements
+      /* --------------------------------------------- */
+      /* ------------ GRAPH ELEMENTS ----------------- */
+      /* --------------------------------------------- */
       var graphElements = panGroup.add("panel", undefined, 'Graph Elements');
       graphElements.alignChildren = 'left';
 
-      //Adding plot curves
+      /* ------------ ADD PLOT CURVE ----------------- */
       var plotGroup = graphElements.add("group");
       var addPlotButton = plotGroup.add("button", undefined, '+');
       addPlotButton.size = defSize;
@@ -264,13 +328,13 @@
           var com = app.project.activeItem;
           var graphBuff = [];
           if(com.selectedLayers.length > 0){ //if there are selected layers, check those
-            for(n=0; n<com.selectedLayers.length; n++){ //keep only the ones that are AE Graphs
+            for(var n=0; n<com.selectedLayers.length; n++){ //keep only the ones that are AE Graphs
               var lay = com.selectedLayers[n];
               if(isAEGraph(lay)) graphBuff.push(lay);
             }
             if(graphBuff.length > 0) {
-              for(n=0; n<graphBuff.length; n++){
-                alert(graphBuff[n].name);
+              //add a plot in every AE Graph layer we've selected
+              for(var n=0; n<graphBuff.length; n++){
                 addPlot(graphBuff[n]);
               }
             } else { //if there are no AE Graphs, throw an error
