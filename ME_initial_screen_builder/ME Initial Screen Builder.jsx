@@ -7,11 +7,15 @@
     SECTION_NAME = 'MinuteEarthTools', STICK_FOLDER = 'StickFigureFolder';
   var PEOPLE = ['Alex', 'Arcadi', 'David', 'Emily', 'Ever', 'Henry', 'Jesse', 'Kate', 'Melissa', 'Nathaniel', 'Peter', 'Qingyang'], PEOPLE_COLUMNS = 3;
   var PEOPLE_PER_COLUMN = Math.floor(PEOPLE.length/PEOPLE_COLUMNS);
+  var PNG_SIZE = [1200, 1200], DEF_SCALE = [35,35], DEF_POS = [960,334], DEF_INIT_POS = [960,673], TRANSITION_TIMES = [1.167,1.467], ANCHOR = [505.8,592];
+  var BG_SCALE = [285.7,285.7], BG_POS = [622.9,1188.6], BG_ID = 119;
+  var EASE_START = new KeyframeEase(0,33.33), EASE_END = new KeyframeEase(0,72.92);
 
   function myScript(thisObj){
     function buildUI(thisObj){
       //GLOBAL VARIABLES
-      var narratorName, narratorPath  = [null, null];
+      var narratorName=null, narratorPath  = [null, null];
+      var morePeople = null;
 
       /**
        * Toggles visibility of a certain Control object in ScriptUI
@@ -82,6 +86,7 @@
       var narratorPanel = panGroup.add("panel",undefined, "Who's going to narrate?", {name: 'narrator', orientation: 'column'});
       var narrator = narratorPanel.add("dropdownlist", undefined, ['Kate', 'David', 'Alex', SOMEONE_ELSE_STRING]);
       narrator.selection = 0;
+      narratorName = 'Kate';
       var narratorBrowseControl = narratorPanel.add("group",{x:0, y:0, height: 50, width: undefined});
       narratorBrowseControl.add('statictext', undefined, 'File:');
       var narratorBrowsePath = narratorBrowseControl.add('edittext',undefined,'This Is Only A Default String!!!',{readonly:true, characters: 50});
@@ -93,8 +98,9 @@
       narrator.onChange = function(){
         //if the option selected was "someone else" open dialog to look for the file
         if(this.selection == this.items[this.items.length - 1]){
-          narratorPath = getNarratorFiles();
-          //if this was the first time we clicked on 'Someone else...' add a browse menu control
+          //if this is the first time we clicked on it, ask for files
+          if(narratorPath[0] === null) narratorPath = getNarratorFiles();
+          //add a browse menu control
           if(!narratorBrowseControl.visible) toggleVisibility(narratorBrowseControl);
         } else {
           narratorName = this.selection;
@@ -118,7 +124,18 @@
 
       for(var n=0; n<PEOPLE.length; n++){
         var gr = everybodyGroup.children[Math.floor(n/PEOPLE_PER_COLUMN)];
-        gr.add("checkbox", undefined, PEOPLE[n], {name: PEOPLE[n], orientation: 'column'});
+        var ch = gr.add("checkbox", undefined, PEOPLE[n], {name: PEOPLE[n], orientation: 'column'});
+        switch (PEOPLE[n]) {
+          case 'Nathaniel':
+          case 'Melissa':
+          case 'Henry':
+          case 'Peter':
+          case 'Alex':
+            ch.value = true;
+            break;
+          default:
+            ch.value = false;
+        }
       }
 
       var everybodyBrowseControl = everybodyPanel.add("group",{x:0, y:0, height: 50, width: undefined});
@@ -126,19 +143,115 @@
       var everybodyBrowsePath = everybodyBrowseControl.add('edittext',undefined,'This Is Only A Default String!!!',{readonly:true, characters: 50});
       var everybodyBrowseButton = everybodyBrowseControl.add('button', undefined,'Browse...');
 
+      everybodyBrowseButton.onClick = function(){
+        var fil = app.project.file;
+        //ask for the files that will be needed: body and arm
+        alert('Select files for everyone you want to add ');
+        morePeople = fil.openDlg('Team Member File Selection', fileFilter('*(T)*.png'), true);
+        if(morePeople !== null){
+          if(morePeople instanceof Array){
+            var str = "";
+            for(var n=0; n<morePeople.length-1; n++) str = str + morePeople[n].displayName + ",";
+            everybodyBrowsePath.text = str + morePeople[morePeople.length-1].displayName;
+          } else everybodyBrowsePath.text = morePeople.displayName;
+        }
+      }
+
       /* ---------------- BUILD BUTTON --------------- */
       /*              Button for building!             */
       /* ----------------------------------------------*/
       var buildButton = panGroup.add("button",undefined,"Build!");
       buildButton.onClick = function(){
-        str = "";
-        for(var n=0; n<PEOPLE.length; n++){
-          var gr = myPanel.findElement(PEOPLE[n]);
-          str = str + PEOPLE[n] + ": " + (gr.value ? 'Yes':'No') + "\n";
-        }
-        alert(str);
-      }
+        var comp;
 
+        app.beginUndoGroup('Build ME Initial Screen');
+        //First we'll see who's narrating
+        var fol;
+        var cond = (narratorPath[0] === null) ? false:(narratorName === narratorPath[0].displayName);
+        if(cond){ //if we have chosen a different person, create a whole new Comp
+          narratorName = narratorPath[0].displayName.split(" ")[0];
+          //make sure we have all the files necessary
+          if(narratorPath[0] !== null && narratorPath[1] !== null){
+            fol = app.project.items.addFolder(narratorName);
+            //create a new comp starring our new narrator
+            comp = app.project.items.addComp(narratorName+' Intro', 1920, 1080, 1, 4, 24);
+            //set motion blur options
+            comp.motionBlur = true;
+            comp.shutterAngle = 90;
+            comp.shutterPhase = -45;
+
+            //import narrator files
+            //body
+            var body = new ImportOptions(narratorPath[0]);
+            body.importAs = ImportAsType.FOOTAGE;
+            body = app.project.importFile(body);
+            body.parentFolder = fol;
+            //arm
+            var arm = new ImportOptions(narratorPath[1]);
+            arm.importAs = ImportAsType.FOOTAGE;
+            arm = app.project.importFile(arm);
+            arm.parentFolder = fol;
+
+            //place elements inside comp
+            body = comp.layers.add(body);
+            body.name = narratorName + ' Body';
+            body.motionBlur = true;
+            body.position.setValue(DEF_POS);
+            body.scale.setValue([DEF_SCALE[0]*PNG_SIZE[0]/body.width, DEF_SCALE[1]*PNG_SIZE[1]/body.height]);
+
+            arm = comp.layers.add(arm);
+            arm.name = narratorName + ' Arm';
+            arm.motionBlur = true;
+            arm.position.setValue(DEF_POS);
+            arm.scale.setValue([DEF_SCALE[0]*PNG_SIZE[0]/arm.width, DEF_SCALE[1]*PNG_SIZE[1]/arm.height]);
+            //waving animation
+            arm.rotation.expression = '21*Math.pow(Math.sin(Math.PI*timeToFrames(time)/16),2)';
+
+            //anchorpoint linking so it's easier to adjust later
+            arm.anchorPoint = ANCHOR; arm.parent = body;
+
+            //add the zooming animation
+            body.position.setValuesAtTimes(TRANSITION_TIMES,[DEF_INIT_POS,DEF_POS]);
+            body.scale.setValuesAtTimes(TRANSITION_TIMES,[[100*PNG_SIZE[0]/body.width, 100*PNG_SIZE[1]/body.height],[DEF_SCALE[0]*PNG_SIZE[0]/body.width, DEF_SCALE[1]*PNG_SIZE[1]/body.height]]);
+
+            //ease the zooming animation
+            body.position.setTemporalEaseAtKey(1, [EASE_START]);
+            body.position.setTemporalEaseAtKey(2, [EASE_END]);
+            body.scale.setTemporalEaseAtKey(1, [EASE_START, EASE_START, EASE_START]);
+            body.scale.setTemporalEaseAtKey(2, [EASE_END, EASE_END, EASE_END]);
+
+            //add background
+            var bg = comp.layers.add(app.project.itemByID(BG_ID));
+            bg.parent = body; bg.motionBlur = true;
+            bg.scale.setValue(BG_SCALE); bg.position.setValue(BG_POS);
+            bg.moveToEnd();
+          } else alert("Missing narrator files! Please try again and make sure to select of the files - the body and the arm.");
+        } else { //if not, we can clone Kate/Alex/David's
+          fol = app.project.items.addFolder(narratorName);
+          var alles = app.project.rootFolder.items;
+          for(var n=1; n<=alles.length; n++){
+            if(alles[n] instanceof CompItem && alles[n].name.indexOf(narratorName) >= 0){
+              comp = alles[n];
+            }
+          }
+          comp = comp.duplicate();
+
+          //remove unnecessary layers
+          var lays = comp.layers;
+          var n=1;
+          while(n<=lays.length){
+            if(lays[n].name.indexOf(narratorName+'.png') >= 0)
+              lays[n].remove();
+            else n++;
+          }
+        }
+
+        //put composition inside folder and open
+        comp.parentFolder = fol;
+        app.endUndoGroup();
+        comp.openInViewer();
+        myPanel.close();
+      }
 
       myPanel.layout.layout(true);
       return myPanel;
